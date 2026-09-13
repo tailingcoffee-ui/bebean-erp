@@ -138,37 +138,17 @@ default_prices = {"A": 29000, "B": 27000, "C": 22000, "L": 34000, "E": 40000, "D
 # 세션 상태 초기화
 if 'extracted_data' not in st.session_state:
     st.session_state.extracted_data = {}
-if 'upload_mode' not in st.session_state:
-    st.session_state.upload_mode = None
 
 st.title("☕ 비빈 로스팅팩토리")
 st.subheader("모바일 거래처 자동등록 시스템")
 
 st.divider()
 
-# [1단계] 이미지 업로드 (버튼식 분리)
+# [1단계] 이미지 첨부
 st.markdown("#### 1. 사업자등록증 첨부")
+st.info("💡 아래 영역을 눌러 사진을 첨부하세요. (폰에서는 갤러리 또는 카메라 선택창이 뜹니다)")
 
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("📸 촬영하기", use_container_width=True):
-        st.session_state.upload_mode = 'camera'
-with col2:
-    if st.button("📁 갤러리", use_container_width=True):
-        st.session_state.upload_mode = 'gallery'
-
-uploaded_file = None
-
-if st.session_state.upload_mode == 'camera':
-    st.warning("⚠️ 카카오톡 브라우저에서는 카메라가 안 켜집니다! 우측 하단(⋮)을 눌러 '다른 브라우저로 열기(크롬/삼성인터넷)'를 선택해주세요.")
-    camera_file = st.camera_input("사업자등록증 촬영")
-    if camera_file is not None:
-        uploaded_file = camera_file
-elif st.session_state.upload_mode == 'gallery':
-    st.info("💡 앨범에 저장된 사진이나 PDF 파일을 선택하세요.")
-    gallery_file = st.file_uploader("파일 업로드", type=['jpg', 'jpeg', 'png', 'pdf'])
-    if gallery_file is not None:
-        uploaded_file = gallery_file
+uploaded_file = st.file_uploader("", type=['jpg', 'jpeg', 'png', 'pdf'])
 
 if uploaded_file is not None and not st.session_state.extracted_data:
     if st.button("AI 자동 판독 시작", use_container_width=True, type="primary"):
