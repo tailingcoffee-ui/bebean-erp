@@ -54,13 +54,15 @@ def extract_biz_info(file_bytes, mime_type):
     }
     """
     try:
+        # 가장 안정적이고 빠른 최신 모델명으로 변경하여 503 에러 최소화
         res = client.models.generate_content(
-            model="gemini-3.6-flash", contents=[file_part, prompt],
+            model="gemini-1.5-flash", contents=[file_part, prompt],
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
     except Exception:
+        # 백업 모델 호출
         res = client.models.generate_content(
-            model="gemini-flash-latest", contents=[file_part, prompt],
+            model="gemini-1.5-flash-8b", contents=[file_part, prompt],
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
     return json.loads(res.text)
