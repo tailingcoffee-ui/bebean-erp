@@ -134,7 +134,6 @@ def save_customer_to_ecount(session_id, biz_info, group_code, email, phone, sear
     }
     try:
         res = post_request(url, payload)
-        # 이카운트가 보내주는 원본 응답 내용을 상세히 확인할 수 있도록 출력 데이터 포함
         return True, f"✅ 이카운트 API 요청 완료 (할당된 T그룹: {group_code})\n\n🔍 [서버 응답 원본]: {json.dumps(res, ensure_ascii=False)}"
     except Exception as e:
         return False, f"❌ 등록 통신 에러: {str(e)}"
@@ -159,7 +158,7 @@ st.divider()
 
 # [1단계] 이미지 첨부
 st.markdown("#### 1. 사업자등록증 첨부")
-st.info("💡 아래 영역을 눌러 사진을 첨부하세요. (폰에서는 갤러리 또는 카메라 선택창이 뜹니다)")
+st.info("💡 아래 영역을 눌러 사진을 첨부하세요.")
 
 uploaded_file = st.file_uploader("", type=['jpg', 'jpeg', 'png', 'pdf'])
 
@@ -182,12 +181,14 @@ if st.session_state.extracted_data:
     st.markdown("#### 2. 거래처 정보 입력")
     
     company_name = st.text_input("상호명", value=st.session_state.extracted_data.get("상호명", ""))
-    cafe_name = st.text_input("카페명 (검색창내용)", placeholder="상호명과 다를 경우에만 입력하세요")
     boss_name = st.text_input("대표자명", value=st.session_state.extracted_data.get("대표자명", ""))
     biz_no = st.text_input("사업자번호", value=st.session_state.extracted_data.get("사업자등록번호", ""))
     addr = st.text_input("사업장주소", value=st.session_state.extracted_data.get("주소", ""))
+    uptae = st.text_input("업태", value=st.session_state.extracted_data.get("업태", ""))
+    jongmok = st.text_input("종목", value=st.session_state.extracted_data.get("종목", ""))
     email = st.text_input("이메일 (필수 입력)")
     phone = st.text_input("연락처 (필수 입력)")
+    cafe_name = st.text_input("카페명 (검색창내용)", placeholder="상호명과 다를 경우에만 입력하세요")
 
     st.divider()
 
@@ -239,6 +240,8 @@ if st.session_state.extracted_data:
                             st.session_state.extracted_data["대표자명"] = boss_name
                             st.session_state.extracted_data["사업자등록번호"] = biz_no
                             st.session_state.extracted_data["주소"] = addr
+                            st.session_state.extracted_data["업태"] = uptae
+                            st.session_state.extracted_data["종목"] = jongmok
                             search_keyword = cafe_name if cafe_name.strip() else company_name
 
                             session_id, login_msg = get_ecount_session()
