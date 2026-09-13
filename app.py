@@ -135,30 +135,38 @@ bean_display_options = ["선택안함", "초콜릿 쿠키 A타입", "초콜릿 �
 bean_key_mapping = {"초콜릿 쿠키 A타입": "A", "초콜릿 쿠키 B타입": "B", "초콜릿 쿠키 C타입": "C", "레몬 마들렌 블렌드": "L", "(2026)에티오피아 싱글오리진": "E", "디카페인": "D"}
 default_prices = {"A": 29000, "B": 27000, "C": 22000, "L": 34000, "E": 40000, "D": 38000}
 
+# 세션 상태(임시 저장소) 초기화
 if 'extracted_data' not in st.session_state:
     st.session_state.extracted_data = {}
+if 'upload_mode' not in st.session_state:
+    st.session_state.upload_mode = None  # 버튼을 누르기 전에는 아무것도 안 띄움
 
 st.title("☕ 비빈 로스팅팩토리")
 st.subheader("모바일 거래처 자동등록 시스템")
 
 st.divider()
 
-# [1단계] 이미지 업로드 (UI 개선)
-st.markdown("#### 1. 사업자등록증 촬영/업로드")
+# [1단계] 이미지 업로드 (버튼식 숨김 처리)
+st.markdown("#### 1. 사업자등록증 선택")
 
-# 💡 탭(Tab) 기능으로 '카메라 촬영'과 '앨범 업로드'를 분리
-tab1, tab2 = st.tabs(["📸 바로 촬영하기", "📁 앨범에서 선택하기"])
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("📸 촬영하기", use_container_width=True):
+        st.session_state.upload_mode = 'camera'
+with col2:
+    if st.button("📁 업로드하기", use_container_width=True):
+        st.session_state.upload_mode = 'gallery'
 
 uploaded_file = None
 
-with tab1:
-    st.info("💡 영업 현장에서 즉시 사업자등록증을 촬영하세요.")
+# 버튼을 누른 상태에 따라 카메라 또는 파일 업로더를 화면에 표시
+if st.session_state.upload_mode == 'camera':
+    st.info("웹 카메라가 열립니다. (글씨가 흐리면 '업로드하기'를 통해 기본 카메라를 사용하세요.)")
     camera_file = st.camera_input("카메라 실행")
     if camera_file is not None:
         uploaded_file = camera_file
-
-with tab2:
-    st.info("💡 폰 앨범에 저장된 사진이나 PDF 파일을 선택하세요.")
+elif st.session_state.upload_mode == 'gallery':
+    st.info("💡 모바일에서 아래 버튼을 누르면 [기본 카메라로 촬영] 메뉴도 함께 뜹니다!")
     gallery_file = st.file_uploader("파일 업로드", type=['jpg', 'jpeg', 'png', 'pdf'])
     if gallery_file is not None:
         uploaded_file = gallery_file
