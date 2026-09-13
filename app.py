@@ -55,12 +55,12 @@ def extract_biz_info(file_bytes, mime_type):
     """
     try:
         res = client.models.generate_content(
-            model="gemini-1.5-flash", contents=[file_part, prompt],
+            model="gemini-2.5-flash", contents=[file_part, prompt],
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
     except Exception:
         res = client.models.generate_content(
-            model="gemini-1.5-flash", contents=[file_part, prompt],
+            model="gemini-2.5-flash", contents=[file_part, prompt],
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
     return json.loads(res.text)
