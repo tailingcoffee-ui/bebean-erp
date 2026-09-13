@@ -92,7 +92,25 @@ def get_ecount_session():
     try:
         res = post_request(login_url, login_payload)
         if str(res.get("Status")) == "200":
-            return res.get("Data", {}).get("Datas", {}).get("SESSION_ID"), "✅ 로그인 성공"
+            # 이카운트의 다양한 응답 구조에서 세션키를 안전하게 추출하는 로직으로 강화
+            data = res.get("Data", {})
+            session_id = None
+            
+            if isinstance(data, dict):
+                if "SESSION_ID" in data:
+                    session_id = data["SESSION_ID"]
+                elif "Datas" in data:
+                    datas = data["Datas"]
+                    if isinstance(datas, str):
+                        session_id = datas
+                    elif isinstance(datas, dict) and "SESSION_ID" in datas:
+                        session_id = datas["SESSION_ID"]
+            
+            if session_id:
+                return session_id, "✅ 로그인 성공"
+            else:
+                return None, f"❌ 통신은 성공했으나 세션키(SESSION_ID)를 찾을 수 없습니다. (응답: {res})"
+        
         return None, f"❌ 로그인 실패: {res}"
     except Exception as e:
         return None, f"❌ 로그인 에러(통신 문제): {str(e)}"
