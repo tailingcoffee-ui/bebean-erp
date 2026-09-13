@@ -20,7 +20,7 @@ GEMINI_API_KEY = "AQ.Ab8RN6JbokxhhJ_QKUFF0bWn37bX7ypsF5BEguAQkPEgdzELeQ"
 COM_CODE = "684364"
 USER_ID = "BEBEANRF"
 API_CERT_KEY = "5cac3fd68b28643018946222cb23389874"
-ECOUNT_HOST = "https://sboapiad.ecount.com"
+ECOUNT_HOST = "https://oapiad.ecount.com"
 
 @st.cache_resource
 def get_genai_client():
