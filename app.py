@@ -92,10 +92,8 @@ def get_ecount_session():
     try:
         res = post_request(login_url, login_payload)
         if str(res.get("Status")) == "200":
-            # 이카운트의 다양한 응답 구조에서 세션키를 안전하게 추출하는 로직으로 강화
             data = res.get("Data", {})
             session_id = None
-            
             if isinstance(data, dict):
                 if "SESSION_ID" in data:
                     session_id = data["SESSION_ID"]
@@ -108,9 +106,7 @@ def get_ecount_session():
             
             if session_id:
                 return session_id, "✅ 로그인 성공"
-            else:
-                return None, f"❌ 통신은 성공했으나 세션키(SESSION_ID)를 찾을 수 없습니다. (응답: {res})"
-        
+            return None, f"❌ 세션키를 찾을 수 없습니다. (응답: {res})"
         return None, f"❌ 로그인 실패: {res}"
     except Exception as e:
         return None, f"❌ 로그인 에러(통신 문제): {str(e)}"
@@ -188,6 +184,7 @@ if st.session_state.extracted_data:
     
     company_name = st.text_input("상호명", value=st.session_state.extracted_data.get("상호명", ""))
     cafe_name = st.text_input("카페명 (검색창내용)", placeholder="상호명과 다를 경우에만 입력하세요")
+    boss_name = st.text_input("대표자명", value=st.session_state.extracted_data.get("대표자명", ""))
     biz_no = st.text_input("사업자번호", value=st.session_state.extracted_data.get("사업자등록번호", ""))
     addr = st.text_input("사업장주소", value=st.session_state.extracted_data.get("주소", ""))
     email = st.text_input("이메일 (필수 입력)")
@@ -196,7 +193,7 @@ if st.session_state.extracted_data:
     st.divider()
 
     # [3단계] 단가 설정
-    st.markdown("#### 3. 단가설정 (미입력 시 기본가 적용)")
+    st.markdown("#### 3. 단가 입력(부가세포함)")
     
     cb_beans = []
     ent_prices = []
@@ -240,6 +237,7 @@ if st.session_state.extracted_data:
                     else:
                         with st.spinner("🚀 이카운트로 데이터 전송 중..."):
                             st.session_state.extracted_data["상호명"] = company_name
+                            st.session_state.extracted_data["대표자명"] = boss_name
                             st.session_state.extracted_data["사업자등록번호"] = biz_no
                             st.session_state.extracted_data["주소"] = addr
                             search_keyword = cafe_name if cafe_name.strip() else company_name
