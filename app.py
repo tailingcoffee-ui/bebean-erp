@@ -16,7 +16,7 @@ os.environ["GLOG_minloglevel"] = "2"
 # =======================================================
 # 1. 인증 정보 셋팅
 # =======================================================
-GEMINI_API_KEY = "AQ.Ab8RN6IorgyjtGwPj8YYbaDMqEyLuVP5duqHBXKfb4eHTA_REA"
+GEMINI_API_KEY = "AQ.Ab8RN6JbokxhhJ_QKUFF0bWn37bX7ypsF5BEguAQkPEgdzELeQ"
 COM_CODE = "684364"
 USER_ID = "BEBEANRF"
 API_CERT_KEY = "266f7a42f83484758a633f401f68ff1674"
