@@ -3,6 +3,7 @@ import json
 import mimetypes
 import urllib.request
 import urllib.error
+import re
 import streamlit as st
 from google import genai
 from google.genai import types
@@ -38,29 +39,42 @@ def post_request(url, payload):
     with urllib.request.urlopen(req) as response:
         return json.loads(response.read().decode("utf-8"))
 
-def extract_biz_info(file_bytes, mime_type):
-    file_part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+# 👈 [핵심 변경] 여러 장의 사진을 동시에 분석하도록 수정
+def extract_biz_info(uploaded_files):
+    contents = []
+    
+    # 첨부된 모든 사진을 하나씩 읽어서 AI에게 전달할 준비
+    for f in uploaded_files:
+        file_bytes = f.read()
+        mime_type = "image/jpeg" if f.name.endswith(('jpg', 'jpeg')) else f.type
+        contents.append(types.Part.from_bytes(data=file_bytes, mime_type=mime_type))
+    
     prompt = """
-    당신은 대한민국 사업자등록증 전문 판독 AI입니다.
-    제공된 사업자등록증 문서에서 정보를 정확히 추출하여 반드시 JSON 형식으로만 응답하세요.
-    마크다운 코드블록 없이 순수 JSON 문자열만 출력하세요.
+    당신은 대한민국 사업자등록증 및 대화 캡처본 전문 판독 AI입니다.
+    제공된 1개 또는 여러 개의 이미지(사업자등록증, 카톡 캡처 등)를 분석하여 정보를 정확히 추출하세요.
+    반드시 JSON 형식으로만 응답하며, 마크다운 코드블록 없이 순수 JSON 문자열만 출력하세요.
+    이미지에서 발견되지 않은 정보는 빈 문자열("")로 남겨두세요.
     {
         "상호명": "상호 (법인명/단체명)",
         "사업자등록번호": "하이픈 포함 사업자번호",
         "대표자명": "성명",
         "업태": "업태",
         "종목": "종목",
-        "주소": "사업장 주소"
+        "주소": "사업장 주소",
+        "이메일": "이메일 주소 (예: abc@def.com)",
+        "연락처": "휴대폰 번호 또는 전화번호 (하이픈 포함)"
     }
     """
+    contents.append(prompt)
+
     try:
         res = client.models.generate_content(
-            model="gemini-3.6-flash", contents=[file_part, prompt],
+            model="gemini-3.6-flash", contents=contents,
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
     except Exception:
         res = client.models.generate_content(
-            model="gemini-3.6-flash", contents=[file_part, prompt],
+            model="gemini-3.6-flash", contents=contents,
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
     return json.loads(res.text)
@@ -156,19 +170,18 @@ st.subheader("모바일 거래처 자동등록 시스템")
 
 st.divider()
 
-# [1단계] 이미지 첨부
-st.markdown("#### 1. 사업자등록증 첨부")
-st.info("💡 아래 영역을 눌러 사진을 첨부하세요.")
+# [1단계] 이미지 첨부 (여러 장 첨부 가능하도록 수정)
+st.markdown("#### 1. 첨부파일 등록")
+st.info("💡 사업자등록증 사진과 카톡 캡처 사진(이메일, 연락처)을 함께 첨부해 보세요!")
 
-uploaded_file = st.file_uploader("", type=['jpg', 'jpeg', 'png', 'pdf'])
+# accept_multiple_files=True 옵션 추가
+uploaded_files = st.file_uploader("1장 또는 여러 장을 한 번에 선택 가능", type=['jpg', 'jpeg', 'png', 'pdf'], accept_multiple_files=True)
 
-if uploaded_file is not None and not st.session_state.extracted_data:
+if uploaded_files and not st.session_state.extracted_data:
     if st.button("AI 자동 판독 시작", use_container_width=True, type="primary"):
-        with st.spinner("AI가 이미지를 읽고 있습니다... 잠시만 기다려주세요."):
-            file_bytes = uploaded_file.read()
-            mime_type = "image/jpeg" if uploaded_file.name.endswith(('jpg', 'jpeg')) else uploaded_file.type
+        with st.spinner(f"AI가 {len(uploaded_files)}장의 이미지를 분석하고 있습니다..."):
             try:
-                biz_info = extract_biz_info(file_bytes, mime_type)
+                biz_info = extract_biz_info(uploaded_files)
                 st.session_state.extracted_data = biz_info
                 st.rerun()
             except Exception as e:
@@ -186,8 +199,14 @@ if st.session_state.extracted_data:
     addr = st.text_input("사업장주소", value=st.session_state.extracted_data.get("주소", ""))
     uptae = st.text_input("업태", value=st.session_state.extracted_data.get("업태", ""))
     jongmok = st.text_input("종목", value=st.session_state.extracted_data.get("종목", ""))
-    email = st.text_input("이메일 (필수 입력)")
-    phone = st.text_input("연락처 (필수 입력)")
+    
+    # AI가 카톡 사진에서 이메일/연락처를 찾았다면 자동으로 채워줌
+    email_val = st.session_state.extracted_data.get("이메일", "")
+    phone_val = st.session_state.extracted_data.get("연락처", "")
+    
+    email = st.text_input("이메일 (필수 입력)", value=email_val)
+    phone = st.text_input("연락처 (필수 입력)", value=phone_val)
+    
     cafe_name = st.text_input("카페명 (검색창내용)", placeholder="상호명과 다를 경우에만 입력하세요")
 
     st.divider()
@@ -211,8 +230,15 @@ if st.session_state.extracted_data:
 
     # [4단계] 실행
     if st.button("🚀 이카운트 시스템 전송", use_container_width=True, type="primary"):
+        email_pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        phone_pattern = r"^\d{2,3}-?\d{3,4}-?\d{4}$"
+
         if not email or not phone:
             st.warning("⚠️ 이메일과 연락처를 반드시 입력해 주세요.")
+        elif not re.match(email_pattern, email):
+            st.warning("⚠️ 이메일 형식이 올바르지 않습니다. (예: test@test.com)")
+        elif not re.match(phone_pattern, phone):
+            st.warning("⚠️ 연락처 형식이 올바르지 않습니다. (예: 010-1234-5678 또는 01012345678)")
         else:
             user_inputs = {}
             has_error = False
