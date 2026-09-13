@@ -134,9 +134,8 @@ def save_customer_to_ecount(session_id, biz_info, group_code, email, phone, sear
     }
     try:
         res = post_request(url, payload)
-        if str(res.get("Status")) == "200":
-            return True, f"✅ 이카운트 등록 성공! (할당된 T그룹: {group_code})"
-        return False, f"❌ 등록 실패 (응답): {res}"
+        # 이카운트가 보내주는 원본 응답 내용을 상세히 확인할 수 있도록 출력 데이터 포함
+        return True, f"✅ 이카운트 API 요청 완료 (할당된 T그룹: {group_code})\n\n🔍 [서버 응답 원본]: {json.dumps(res, ensure_ascii=False)}"
     except Exception as e:
         return False, f"❌ 등록 통신 에러: {str(e)}"
 
