@@ -19,7 +19,7 @@ os.environ["GLOG_minloglevel"] = "2"
 GEMINI_API_KEY = "AQ.Ab8RN6JbokxhhJ_QKUFF0bWn37bX7ypsF5BEguAQkPEgdzELeQ"
 COM_CODE = "684364"
 USER_ID = "BEBEANRF"
-API_CERT_KEY = "266f7a42f83484758a633f401f68ff1674"
+API_CERT_KEY = "5cac3fd68b28643018946222cb23389874"
 ECOUNT_HOST = "https://sboapiad.ecount.com"
 
 @st.cache_resource
