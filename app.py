@@ -22,7 +22,6 @@ USER_ID = "BEBEANRF"
 API_CERT_KEY = "266f7a42f83484758a633f401f68ff1674"
 ECOUNT_HOST = "https://sboapiad.ecount.com"
 
-# Streamlit 환경에서는 AI 클라이언트를 한 번만 캐싱(저장)해두는 것이 빠릅니다.
 @st.cache_resource
 def get_genai_client():
     return genai.Client(api_key=GEMINI_API_KEY)
@@ -30,7 +29,7 @@ def get_genai_client():
 client = get_genai_client()
 
 # =======================================================
-# 통신 및 핵심 로직 (기존 윈도우 버전과 100% 동일)
+# 통신 및 핵심 로직
 # =======================================================
 def post_request(url, payload):
     clean_url = url.replace("[", "").replace("]", "").strip()
@@ -130,14 +129,12 @@ def save_customer_to_ecount(session_id, biz_info, group_code, email, phone, sear
 # =======================================================
 # 2. 모바일 웹 화면 구성 (Streamlit UI)
 # =======================================================
-# 스마트폰 세로 화면에 꽉 차게 보이도록 웹페이지 기본 설정
 st.set_page_config(page_title="비빈 ERP 자동등록", page_icon="☕", layout="centered")
 
 bean_display_options = ["선택안함", "초콜릿 쿠키 A타입", "초콜릿 쿠키 B타입", "초콜릿 쿠키 C타입", "레몬 마들렌 블렌드", "(2026)에티오피아 싱글오리진", "디카페인"]
 bean_key_mapping = {"초콜릿 쿠키 A타입": "A", "초콜릿 쿠키 B타입": "B", "초콜릿 쿠키 C타입": "C", "레몬 마들렌 블렌드": "L", "(2026)에티오피아 싱글오리진": "E", "디카페인": "D"}
 default_prices = {"A": 29000, "B": 27000, "C": 22000, "L": 34000, "E": 40000, "D": 38000}
 
-# 세션 상태(임시 저장소) 초기화 - 화면이 새로고침되어도 데이터를 기억하게 함
 if 'extracted_data' not in st.session_state:
     st.session_state.extracted_data = {}
 
@@ -146,20 +143,35 @@ st.subheader("모바일 거래처 자동등록 시스템")
 
 st.divider()
 
-# [1단계] 이미지 업로드
+# [1단계] 이미지 업로드 (UI 개선)
 st.markdown("#### 1. 사업자등록증 촬영/업로드")
-st.info("💡 스마트폰 접속 시 아래 버튼을 누르면 '카메라 촬영'이 활성화됩니다.")
-uploaded_file = st.file_uploader("이미지를 업로드하거나 카메라로 촬영하세요.", type=['jpg', 'jpeg', 'png', 'pdf'])
+
+# 💡 탭(Tab) 기능으로 '카메라 촬영'과 '앨범 업로드'를 분리
+tab1, tab2 = st.tabs(["📸 바로 촬영하기", "📁 앨범에서 선택하기"])
+
+uploaded_file = None
+
+with tab1:
+    st.info("💡 영업 현장에서 즉시 사업자등록증을 촬영하세요.")
+    camera_file = st.camera_input("카메라 실행")
+    if camera_file is not None:
+        uploaded_file = camera_file
+
+with tab2:
+    st.info("💡 폰 앨범에 저장된 사진이나 PDF 파일을 선택하세요.")
+    gallery_file = st.file_uploader("파일 업로드", type=['jpg', 'jpeg', 'png', 'pdf'])
+    if gallery_file is not None:
+        uploaded_file = gallery_file
 
 if uploaded_file is not None and not st.session_state.extracted_data:
     if st.button("AI 자동 판독 시작", use_container_width=True, type="primary"):
         with st.spinner("AI가 이미지를 읽고 있습니다... 잠시만 기다려주세요."):
             file_bytes = uploaded_file.read()
-            mime_type = uploaded_file.type
+            mime_type = "image/jpeg" if uploaded_file.name.endswith(('jpg', 'jpeg')) else uploaded_file.type
             try:
                 biz_info = extract_biz_info(file_bytes, mime_type)
                 st.session_state.extracted_data = biz_info
-                st.rerun() # 화면 새로고침하여 다음 폼 열기
+                st.rerun()
             except Exception as e:
                 st.error(f"❌ 이미지 판독 중 오류가 발생했습니다: {str(e)}")
 
@@ -236,7 +248,7 @@ if st.session_state.extracted_data:
                                 )
                                 if success:
                                     st.success(save_msg)
-                                    st.balloons() # 성공 축하 애니메이션!
-                                    st.session_state.extracted_data = {} # 초기화
+                                    st.balloons()
+                                    st.session_state.extracted_data = {}
                                 else:
                                     st.error(save_msg)
